@@ -1,0 +1,17 @@
+Portainer Light - Home Assistant Custom Integration
+Copyright 2026 asanchezed
+
+This product includes software originally developed as part of
+Home Assistant Core (https://github.com/home-assistant/core), specifically
+the `portainer` integration under `homeassistant/components/portainer/`,
+Copyright Home Assistant Contributors, licensed under the Apache License,
+Version 2.0.
+
+The `portainer_light` integration is a derivative work focused on a narrower
+use case: exposing Docker Swarm services as replica sensors with a single
+`scale_service` action. Significant portions of the configuration flow,
+coordinator, and service handling were inspired by — and in some cases
+adapted from — the original Home Assistant `portainer` integration.
+
+You can obtain a copy of the Apache License, Version 2.0, at:
+    http://www.apache.org/licenses/LICENSE-2.0

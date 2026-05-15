@@ -1,0 +1,24 @@
+# Services for Portainer Light
+
+scale_service:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: portainer_light
+          model: Endpoint
+    service_name:
+      required: true
+      example: mystack_myservice
+      selector:
+        text:
+    replicas:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: box

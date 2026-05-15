@@ -1,0 +1,12 @@
+{
+  "domain": "portainer_light",
+  "name": "Portainer Light",
+  "codeowners": ["@asanchezed"],
+  "config_flow": true,
+  "documentation": "https://github.com/asanchezed/homeassistant-portainer-light",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/asanchezed/homeassistant-portainer-light/issues",
+  "requirements": ["pyportainer==1.0.38"],
+  "version": "0.0.1"
+}
