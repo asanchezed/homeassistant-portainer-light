@@ -25,6 +25,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
+    CONF_ENDPOINTS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     SERVICE_MODE_GLOBAL,
@@ -34,6 +35,18 @@ from .const import (
 type PortainerLightConfigEntry = ConfigEntry[PortainerLightCoordinator]
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def selected_endpoint_ids(entry: PortainerLightConfigEntry) -> set[int] | None:
+    """Return the endpoint IDs the user opted in to.
+
+    ``None`` means the entry predates the endpoint selection and every endpoint
+    reported by Portainer is exposed.
+    """
+    raw = entry.options.get(CONF_ENDPOINTS)
+    if raw is None:
+        return None
+    return {int(value) for value in raw}
 
 
 @dataclass(slots=True)
@@ -98,6 +111,11 @@ class PortainerLightCoordinator(
             ]
         ] = []
 
+    @property
+    def selected_endpoint_ids(self) -> set[int] | None:
+        """Return the endpoint IDs selected in the options, None for all."""
+        return selected_endpoint_ids(self.config_entry)
+
     async def _async_setup(self) -> None:
         """Validate connection on first setup."""
         try:
@@ -144,8 +162,17 @@ class PortainerLightCoordinator(
             ) from err
 
         mapped: dict[int, PortainerLightEndpointData] = {}
+        selected = self.selected_endpoint_ids
 
         for endpoint in endpoints:
+            if selected is not None and endpoint.id not in selected:
+                _LOGGER.debug(
+                    "Skipping endpoint not selected in the options: %s (ID: %d)",
+                    endpoint.name,
+                    endpoint.id,
+                )
+                continue
+
             if endpoint.status == EndpointStatus.DOWN:
                 _LOGGER.debug(
                     "Skipping offline endpoint: %s (ID: %d)",

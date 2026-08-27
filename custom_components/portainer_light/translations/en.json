@@ -1,0 +1,107 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Device is already configured",
+      "cannot_connect": "Failed to connect",
+      "no_endpoints": "No endpoints were found on this Portainer instance."
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "timeout_connect": "Timeout establishing connection",
+      "unknown": "Unexpected error"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "api_token": "API token",
+          "url": "URL",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "data_description": {
+          "api_token": "The API access token for authenticating with Portainer",
+          "url": "The URL, including the port, of your Portainer instance",
+          "verify_ssl": "Whether to verify SSL certificates. Disable only if you have a self-signed certificate"
+        },
+        "description": "Lightweight Portainer integration exposing only Docker Swarm services as replica sensors. You can create an access token in the Portainer UI under **My account > Access tokens**."
+      },
+      "endpoints": {
+        "data": {
+          "endpoints": "Endpoints"
+        },
+        "data_description": {
+          "endpoints": "Only the selected endpoints will be added as devices, with a replica sensor per Docker Swarm service."
+        },
+        "description": "Select which Portainer endpoints you want to add.",
+        "title": "Endpoints"
+      }
+    }
+  },
+  "options": {
+    "abort": {
+      "cannot_connect": "Failed to connect",
+      "no_endpoints": "No endpoints were found on this Portainer instance."
+    },
+    "step": {
+      "init": {
+        "data": {
+          "endpoints": "Endpoints"
+        },
+        "data_description": {
+          "endpoints": "Only the selected endpoints will be added as devices, with a replica sensor per Docker Swarm service."
+        },
+        "description": "Select which Portainer endpoints you want to expose. Devices and entities of the endpoints you deselect will be removed.",
+        "title": "Endpoints"
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "An error occurred while trying to connect to the Portainer instance: {error}"
+    },
+    "cannot_connect_no_details": {
+      "message": "An error occurred while trying to connect to the Portainer instance."
+    },
+    "invalid_auth": {
+      "message": "An error occurred while trying to authenticate: {error}"
+    },
+    "invalid_auth_no_details": {
+      "message": "An error occurred while trying to authenticate."
+    },
+    "invalid_target": {
+      "message": "Invalid device targeted."
+    },
+    "service_not_found": {
+      "message": "No Docker Swarm service named '{service_name}' was found on the targeted endpoint."
+    },
+    "service_not_replicated": {
+      "message": "Service '{service_name}' is not in replicated mode and cannot be scaled."
+    },
+    "timeout_connect": {
+      "message": "A timeout occurred while trying to connect to the Portainer instance: {error}"
+    },
+    "timeout_connect_no_details": {
+      "message": "A timeout occurred while trying to connect to the Portainer instance."
+    }
+  },
+  "services": {
+    "scale_service": {
+      "description": "Scales a Docker Swarm service to a target number of replicas on a Portainer endpoint.",
+      "fields": {
+        "device_id": {
+          "description": "The endpoint where the service is running.",
+          "name": "Endpoint"
+        },
+        "service_name": {
+          "description": "Exact name of the Docker Swarm service to scale (for stack-deployed services this is usually 'stackname_servicename').",
+          "name": "Service name"
+        },
+        "replicas": {
+          "description": "Desired number of replicas. Use 0 to stop the service.",
+          "name": "Replicas"
+        }
+      },
+      "name": "Scale Docker Swarm service"
+    }
+  }
+}

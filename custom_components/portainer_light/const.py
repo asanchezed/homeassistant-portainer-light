@@ -5,6 +5,8 @@ from datetime import timedelta
 DOMAIN = "portainer_light"
 DEFAULT_NAME = "Portainer Light"
 
+CONF_ENDPOINTS = "endpoints"
+
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=60)
 
 API_MAX_RETRIES = 3

@@ -1,7 +1,9 @@
 {
   "config": {
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "no_endpoints": "No endpoints were found on this Portainer instance."
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
@@ -22,6 +24,34 @@
           "verify_ssl": "Whether to verify SSL certificates. Disable only if you have a self-signed certificate"
         },
         "description": "Lightweight Portainer integration exposing only Docker Swarm services as replica sensors. You can create an access token in the Portainer UI under **My account > Access tokens**."
+      },
+      "endpoints": {
+        "data": {
+          "endpoints": "Endpoints"
+        },
+        "data_description": {
+          "endpoints": "Only the selected endpoints will be added as devices, with a replica sensor per Docker Swarm service."
+        },
+        "description": "Select which Portainer endpoints you want to add.",
+        "title": "Endpoints"
+      }
+    }
+  },
+  "options": {
+    "abort": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "no_endpoints": "[%key:component::portainer_light::config::abort::no_endpoints%]"
+    },
+    "step": {
+      "init": {
+        "data": {
+          "endpoints": "[%key:component::portainer_light::config::step::endpoints::data::endpoints%]"
+        },
+        "data_description": {
+          "endpoints": "[%key:component::portainer_light::config::step::endpoints::data_description::endpoints%]"
+        },
+        "description": "Select which Portainer endpoints you want to expose. Devices and entities of the endpoints you deselect will be removed.",
+        "title": "Endpoints"
       }
     }
   },

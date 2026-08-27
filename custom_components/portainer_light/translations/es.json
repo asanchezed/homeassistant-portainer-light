@@ -1,0 +1,107 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "El dispositivo ya está configurado",
+      "cannot_connect": "No se pudo conectar",
+      "no_endpoints": "No se ha encontrado ningún endpoint en esta instancia de Portainer."
+    },
+    "error": {
+      "cannot_connect": "No se pudo conectar",
+      "invalid_auth": "Autenticación no válida",
+      "timeout_connect": "Se agotó el tiempo de espera al establecer la conexión",
+      "unknown": "Error inesperado"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "api_token": "Token de acceso",
+          "url": "URL",
+          "verify_ssl": "Verificar el certificado SSL"
+        },
+        "data_description": {
+          "api_token": "Token de acceso a la API para autenticarse en Portainer",
+          "url": "URL de tu instancia de Portainer, incluyendo el puerto",
+          "verify_ssl": "Si se debe verificar el certificado SSL. Desactívalo solo si usas un certificado autofirmado"
+        },
+        "description": "Integración ligera de Portainer que expone únicamente los servicios de Docker Swarm como sensores de réplicas. Puedes crear un token de acceso en la UI de Portainer, en **My account > Access tokens**."
+      },
+      "endpoints": {
+        "data": {
+          "endpoints": "Endpoints"
+        },
+        "data_description": {
+          "endpoints": "Solo se añadirán como dispositivos los endpoints seleccionados, con un sensor de réplicas por cada servicio de Docker Swarm."
+        },
+        "description": "Selecciona los endpoints de Portainer que quieres añadir.",
+        "title": "Endpoints"
+      }
+    }
+  },
+  "options": {
+    "abort": {
+      "cannot_connect": "No se pudo conectar",
+      "no_endpoints": "No se ha encontrado ningún endpoint en esta instancia de Portainer."
+    },
+    "step": {
+      "init": {
+        "data": {
+          "endpoints": "Endpoints"
+        },
+        "data_description": {
+          "endpoints": "Solo se añadirán como dispositivos los endpoints seleccionados, con un sensor de réplicas por cada servicio de Docker Swarm."
+        },
+        "description": "Selecciona los endpoints de Portainer que quieres exponer. Los dispositivos y entidades de los endpoints que deselecciones se eliminarán.",
+        "title": "Endpoints"
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Se ha producido un error al conectar con la instancia de Portainer: {error}"
+    },
+    "cannot_connect_no_details": {
+      "message": "Se ha producido un error al conectar con la instancia de Portainer."
+    },
+    "invalid_auth": {
+      "message": "Se ha producido un error al autenticarse: {error}"
+    },
+    "invalid_auth_no_details": {
+      "message": "Se ha producido un error al autenticarse."
+    },
+    "invalid_target": {
+      "message": "El dispositivo indicado no es válido."
+    },
+    "service_not_found": {
+      "message": "No se ha encontrado ningún servicio de Docker Swarm llamado '{service_name}' en el endpoint indicado."
+    },
+    "service_not_replicated": {
+      "message": "El servicio '{service_name}' no está en modo replicated y no se puede escalar."
+    },
+    "timeout_connect": {
+      "message": "Se ha agotado el tiempo de espera al conectar con la instancia de Portainer: {error}"
+    },
+    "timeout_connect_no_details": {
+      "message": "Se ha agotado el tiempo de espera al conectar con la instancia de Portainer."
+    }
+  },
+  "services": {
+    "scale_service": {
+      "description": "Escala un servicio de Docker Swarm al número de réplicas indicado en un endpoint de Portainer.",
+      "fields": {
+        "device_id": {
+          "description": "Endpoint donde se está ejecutando el servicio.",
+          "name": "Endpoint"
+        },
+        "service_name": {
+          "description": "Nombre exacto del servicio de Docker Swarm a escalar (para servicios desplegados por stack suele ser 'nombrestack_nombreservicio').",
+          "name": "Nombre del servicio"
+        },
+        "replicas": {
+          "description": "Número de réplicas deseado. Usa 0 para parar el servicio.",
+          "name": "Réplicas"
+        }
+      },
+      "name": "Escalar servicio de Docker Swarm"
+    }
+  }
+}

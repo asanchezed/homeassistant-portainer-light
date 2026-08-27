@@ -10,6 +10,8 @@ desired replicas, and one HA service to change that number.
 
 ## Features
 
+- Pick which Portainer endpoints to add, both when setting up the integration
+  and later from **Configure**. Deselected endpoints are removed.
 - One device per Portainer endpoint, one sensor per Docker Swarm service.
 - Sensor state = desired replicas (`Replicated`) or running tasks (`Global`).
 - `mode` attribute (`replicated` / `global`) on each sensor.
@@ -18,7 +20,7 @@ desired replicas, and one HA service to change that number.
 
 ## Requirements
 
-- Home Assistant 2024.10 or newer.
+- Home Assistant 2024.11 or newer.
 - A Portainer instance reachable from Home Assistant.
 - A Portainer API access token (Portainer UI → **My account → Access tokens**).
 
@@ -53,10 +55,24 @@ desired replicas, and one HA service to change that number.
    - **URL** of your Portainer instance (e.g. `https://portainer.local:9443`).
    - **API token**.
    - **Verify SSL** (disable only for self-signed certificates).
+4. Select the **endpoints** you want to add. All of them are preselected.
 
-A device is created per Portainer endpoint, and one sensor per Docker Swarm
-service is registered under it. The sensor entity name follows the swarm
+A device is created per selected Portainer endpoint, and one sensor per Docker
+Swarm service is registered under it. The sensor entity name follows the swarm
 service name.
+
+### Changing the endpoints later
+
+**Settings → Devices & Services → Portainer Light → Configure** shows the same
+endpoint list, with the current selection preselected. On save the integration
+reloads, so:
+
+- Endpoints you tick are added, with a sensor per swarm service.
+- Endpoints you untick have their device — and therefore all of its sensors —
+  removed from the registry.
+
+Endpoints added to Portainer after the initial setup do not show up on their
+own: open **Configure** and tick them.
 
 ## Service: `portainer_light.scale_service`
 
