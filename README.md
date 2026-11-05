@@ -15,6 +15,8 @@ desired replicas, and one HA service to change that number.
 - One device per Portainer endpoint, one sensor per Docker Swarm service.
 - Sensor state = desired replicas (`Replicated`) or running tasks (`Global`).
 - `mode` attribute (`replicated` / `global`) on each sensor.
+- `running` attribute: tasks whose container is actually running, to spot a
+  service that is down or crash-looping (see below).
 - HA service `portainer_light.scale_service` to scale `Replicated` services.
 - Polling every 60 seconds + immediate refresh after each scale action.
 
@@ -73,6 +75,34 @@ reloads, so:
 
 Endpoints added to Portainer after the initial setup do not show up on their
 own: open **Configure** and tick them.
+
+## Sensor attributes
+
+| Attribute       | Description                                                                 |
+|-----------------|-----------------------------------------------------------------------------|
+| `endpoint_id`   | Portainer endpoint ID.                                                      |
+| `endpoint_name` | Portainer endpoint name.                                                    |
+| `service_name`  | Swarm service name (`stackname_servicename`).                               |
+| `mode`          | `replicated` or `global`.                                                   |
+| `running`       | Tasks Swarm wants running whose container is in the `running` state. `null` when the tasks request timed out. |
+
+The state is what Swarm *wants* (desired replicas); `running` is what it
+*has*. A service whose container keeps failing still reports `1` as its state,
+but `running` drops to `0`. For example, a template binary sensor that turns
+on when a service is not running as it should:
+
+```yaml
+- binary_sensor:
+    name: My service down
+    device_class: problem
+    delay_on: "00:02:00"
+    state: >-
+      {% set r = state_attr('sensor.myendpoint_mystack_myservice', 'running') %}
+      {{ r is number and r < states('sensor.myendpoint_mystack_myservice') | int(0) }}
+```
+
+The `delay_on` skips the few seconds a container needs to start after a
+scale action or an update.
 
 ## Service: `portainer_light.scale_service`
 

@@ -59,6 +59,8 @@ class PortainerLightServiceData:
     replicas: int
     spec: dict[str, Any]
     version_index: int
+    # Tasks actually in the ``running`` state; None when the tasks call failed.
+    running: int | None = None
 
 
 @dataclass
@@ -248,15 +250,32 @@ class PortainerLightCoordinator(
                     version_index=int(version_index),
                 )
 
-        if globals_pending:
-            running_per_service = await self._fetch_running_tasks(endpoint_id)
-            for service_id, data in globals_pending.items():
-                data.replicas = running_per_service.get(service_id, 0)
+        services = {**replicated, **globals_pending}
+        counts = await self._fetch_task_counts(endpoint_id)
 
-        return {**replicated, **globals_pending}
+        if counts is None:
+            # Timeout: Global services keep reporting 0 this cycle (as before)
+            # and ``running`` stays unknown (None) for every service.
+            return services
 
-    async def _fetch_running_tasks(self, endpoint_id: int) -> dict[str, int]:
-        """Count running tasks per ServiceID for the given endpoint."""
+        desired_per_service, running_per_service = counts
+        for service_id, data in globals_pending.items():
+            data.replicas = desired_per_service.get(service_id, 0)
+        for service_id, data in services.items():
+            data.running = running_per_service.get(service_id, 0)
+
+        return services
+
+    async def _fetch_task_counts(
+        self, endpoint_id: int
+    ) -> tuple[Counter[str], Counter[str]] | None:
+        """Count tasks per ServiceID for the given endpoint.
+
+        Returns ``(desired, running)``: tasks Swarm wants running, and those
+        of them whose container is actually in the ``running`` state. A service
+        stuck in a restart loop has ``desired`` > ``running``. Returns None on
+        timeout.
+        """
         try:
             tasks: list[dict[str, Any]] = await self.portainer._request(  # noqa: SLF001
                 f"endpoints/{endpoint_id}/docker/tasks",
@@ -264,18 +283,22 @@ class PortainerLightCoordinator(
             )
         except PortainerTimeoutError:
             _LOGGER.warning(
-                "Timeout fetching swarm tasks for endpoint %s; "
-                "Global replica counts will be 0 this cycle",
+                "Timeout fetching swarm tasks for endpoint %s; running counts "
+                "are unknown and Global replica counts will be 0 this cycle",
                 endpoint_id,
             )
-            return {}
+            return None
 
-        counter: Counter[str] = Counter()
+        desired: Counter[str] = Counter()
+        running: Counter[str] = Counter()
         for task in tasks:
             service_id = task.get("ServiceID")
-            if service_id:
-                counter[service_id] += 1
-        return dict(counter)
+            if not service_id:
+                continue
+            desired[service_id] += 1
+            if (task.get("Status") or {}).get("State") == "running":
+                running[service_id] += 1
+        return desired, running
 
     def _async_add_remove(
         self, mapped: dict[int, PortainerLightEndpointData]

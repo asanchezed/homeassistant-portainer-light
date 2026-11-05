@@ -149,4 +149,7 @@ class PortainerLightServiceSensor(
         }
         if data is not None:
             attrs["mode"] = data.mode
+            # Tasks really running (None if the tasks call timed out). Compare
+            # it with the state to spot a service that is down or crash-looping.
+            attrs["running"] = data.running
         return attrs
