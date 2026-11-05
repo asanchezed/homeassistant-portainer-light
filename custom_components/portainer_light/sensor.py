@@ -7,16 +7,13 @@ from typing import Any
 
 from yarl import URL
 
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorStateClass,
-    StateType,
-)
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DEFAULT_NAME, DOMAIN
