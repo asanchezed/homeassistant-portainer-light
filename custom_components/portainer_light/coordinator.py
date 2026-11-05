@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import logging
+import re
 from typing import Any
 
 from pyportainer import (
@@ -36,6 +37,31 @@ type PortainerLightConfigEntry = ConfigEntry[PortainerLightCoordinator]
 
 _LOGGER = logging.getLogger(__name__)
 
+# Containers created by Swarm for a service task carry this label; they are
+# already covered by the service sensors.
+SWARM_SERVICE_LABEL = "com.docker.swarm.service.id"
+COMPOSE_PROJECT_LABEL = "com.docker.compose.project"
+COMPOSE_SERVICE_LABEL = "com.docker.compose.service"
+
+# The containers list only gives health and exit code inside the human status,
+# e.g. "Up 9 days (healthy)" or "Exited (137) 2 hours ago".
+_HEALTH_RE = re.compile(r"\((healthy|unhealthy|health: starting)\)")
+_EXIT_CODE_RE = re.compile(r"^(?:Exited|Restarting) \((-?\d+)\)")
+
+
+def _parse_health(status: str) -> str | None:
+    """Return healthy / unhealthy / starting, or None without a healthcheck."""
+    match = _HEALTH_RE.search(status)
+    if match is None:
+        return None
+    return "starting" if match.group(1) == "health: starting" else match.group(1)
+
+
+def _parse_exit_code(status: str) -> int | None:
+    """Return the exit code of an exited or restarting container."""
+    match = _EXIT_CODE_RE.match(status)
+    return int(match.group(1)) if match else None
+
 
 def selected_endpoint_ids(entry: PortainerLightConfigEntry) -> set[int] | None:
     """Return the endpoint IDs the user opted in to.
@@ -63,6 +89,21 @@ class PortainerLightServiceData:
     running: int | None = None
 
 
+@dataclass(slots=True)
+class PortainerLightContainerData:
+    """Data for a standalone container (docker run / docker compose, not Swarm)."""
+
+    id: str
+    name: str
+    state: str
+    status: str
+    image: str
+    health: str | None
+    exit_code: int | None
+    compose_project: str | None
+    compose_service: str | None
+
+
 @dataclass
 class PortainerLightEndpointData:
     """Data for a single Portainer endpoint."""
@@ -71,6 +112,9 @@ class PortainerLightEndpointData:
     name: str | None
     endpoint: Endpoint
     services: dict[str, PortainerLightServiceData]
+    # Standalone containers keyed by container name (stable across re-creations,
+    # unlike the container ID).
+    containers: dict[str, PortainerLightContainerData] = field(default_factory=dict)
 
 
 class PortainerLightCoordinator(
@@ -98,6 +142,7 @@ class PortainerLightCoordinator(
 
         self.known_endpoints: set[int] = set()
         self.known_services: set[tuple[int, str]] = set()
+        self.known_containers: set[tuple[int, str]] = set()
 
         self.new_endpoints_callbacks: list[
             Callable[[list[PortainerLightEndpointData]], None]
@@ -107,6 +152,16 @@ class PortainerLightCoordinator(
                 [
                     list[
                         tuple[PortainerLightEndpointData, PortainerLightServiceData]
+                    ]
+                ],
+                None,
+            ]
+        ] = []
+        self.new_containers_callbacks: list[
+            Callable[
+                [
+                    list[
+                        tuple[PortainerLightEndpointData, PortainerLightContainerData]
                     ]
                 ],
                 None,
@@ -185,6 +240,7 @@ class PortainerLightCoordinator(
 
             try:
                 services = await self._fetch_services(endpoint.id)
+                containers = await self._fetch_containers(endpoint.id)
             except PortainerAuthenticationError as err:
                 raise ConfigEntryAuthFailed(
                     translation_domain=DOMAIN,
@@ -203,11 +259,58 @@ class PortainerLightCoordinator(
                 name=endpoint.name,
                 endpoint=endpoint,
                 services=services,
+                containers=containers,
             )
 
         self._async_add_remove(mapped)
 
         return mapped
+
+    async def _fetch_containers(
+        self, endpoint_id: int
+    ) -> dict[str, PortainerLightContainerData]:
+        """Fetch the standalone (non-Swarm) containers of an endpoint.
+
+        On timeout the previous cycle's containers are kept, so their sensors
+        do not flap to unavailable.
+        """
+        try:
+            raw_containers: list[dict[str, Any]] = await self.portainer._request(  # noqa: SLF001
+                f"endpoints/{endpoint_id}/docker/containers/json",
+                params={"all": "1"},
+            )
+        except PortainerTimeoutError:
+            _LOGGER.warning(
+                "Timeout fetching containers for endpoint %s; keeping the "
+                "previous values this cycle",
+                endpoint_id,
+            )
+            previous = (self.data or {}).get(endpoint_id)
+            return previous.containers if previous is not None else {}
+
+        containers: dict[str, PortainerLightContainerData] = {}
+        for raw in raw_containers:
+            labels = raw.get("Labels") or {}
+            if SWARM_SERVICE_LABEL in labels:
+                continue
+            names = raw.get("Names") or []
+            container_id = raw.get("Id")
+            if not names or not container_id:
+                continue
+            name = names[0].lstrip("/")
+            status = raw.get("Status") or ""
+            containers[name] = PortainerLightContainerData(
+                id=container_id,
+                name=name,
+                state=(raw.get("State") or "").lower(),
+                status=status,
+                image=raw.get("Image") or "",
+                health=_parse_health(status),
+                exit_code=_parse_exit_code(status),
+                compose_project=labels.get(COMPOSE_PROJECT_LABEL),
+                compose_service=labels.get(COMPOSE_SERVICE_LABEL),
+            )
+        return containers
 
     async def _fetch_services(
         self, endpoint_id: int
@@ -330,3 +433,20 @@ class PortainerLightCoordinator(
             ]
             for cb in self.new_services_callbacks:
                 cb(new_services)
+
+        current_containers = {
+            (endpoint.id, name)
+            for endpoint in mapped.values()
+            for name in endpoint.containers
+        }
+        self.known_containers &= current_containers
+        new_container_keys = current_containers - self.known_containers
+        if new_container_keys:
+            _LOGGER.debug("New containers found: %s", new_container_keys)
+            self.known_containers.update(new_container_keys)
+            new_containers = [
+                (mapped[endpoint_id], mapped[endpoint_id].containers[name])
+                for endpoint_id, name in new_container_keys
+            ]
+            for cb in self.new_containers_callbacks:
+                cb(new_containers)

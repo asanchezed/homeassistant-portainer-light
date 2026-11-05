@@ -13,3 +13,14 @@ API_MAX_RETRIES = 3
 
 SERVICE_MODE_REPLICATED = "replicated"
 SERVICE_MODE_GLOBAL = "global"
+
+# Container states reported by the Docker API (sensor of device class enum).
+CONTAINER_STATES = [
+    "created",
+    "running",
+    "paused",
+    "restarting",
+    "removing",
+    "exited",
+    "dead",
+]

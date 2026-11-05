@@ -23,14 +23,14 @@
           "url": "The URL, including the port, of your Portainer instance",
           "verify_ssl": "Whether to verify SSL certificates. Disable only if you have a self-signed certificate"
         },
-        "description": "Lightweight Portainer integration exposing only Docker Swarm services as replica sensors. You can create an access token in the Portainer UI under **My account > Access tokens**."
+        "description": "Lightweight Portainer integration exposing Docker Swarm services as replica sensors and standalone containers (docker run / docker compose) as state sensors. You can create an access token in the Portainer UI under **My account > Access tokens**."
       },
       "endpoints": {
         "data": {
           "endpoints": "Endpoints"
         },
         "data_description": {
-          "endpoints": "Only the selected endpoints will be added as devices, with a replica sensor per Docker Swarm service."
+          "endpoints": "Only the selected endpoints will be added as devices, with a replica sensor per Docker Swarm service and a state sensor per standalone container."
         },
         "description": "Select which Portainer endpoints you want to add.",
         "title": "Endpoints"
@@ -48,7 +48,7 @@
           "endpoints": "Endpoints"
         },
         "data_description": {
-          "endpoints": "Only the selected endpoints will be added as devices, with a replica sensor per Docker Swarm service."
+          "endpoints": "Only the selected endpoints will be added as devices, with a replica sensor per Docker Swarm service and a state sensor per standalone container."
         },
         "description": "Select which Portainer endpoints you want to expose. Devices and entities of the endpoints you deselect will be removed.",
         "title": "Endpoints"
@@ -102,6 +102,21 @@
         }
       },
       "name": "Scale Docker Swarm service"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "container": {
+        "state": {
+          "created": "Created",
+          "running": "Running",
+          "paused": "Paused",
+          "restarting": "Restarting",
+          "removing": "Removing",
+          "exited": "Exited",
+          "dead": "Dead"
+        }
+      }
     }
   }
 }

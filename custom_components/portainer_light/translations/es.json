@@ -23,14 +23,14 @@
           "url": "URL de tu instancia de Portainer, incluyendo el puerto",
           "verify_ssl": "Si se debe verificar el certificado SSL. Desactívalo solo si usas un certificado autofirmado"
         },
-        "description": "Integración ligera de Portainer que expone únicamente los servicios de Docker Swarm como sensores de réplicas. Puedes crear un token de acceso en la UI de Portainer, en **My account > Access tokens**."
+        "description": "Integración ligera de Portainer que expone los servicios de Docker Swarm como sensores de réplicas y los contenedores sueltos (docker run / docker compose) como sensores de estado. Puedes crear un token de acceso en la UI de Portainer, en **My account > Access tokens**."
       },
       "endpoints": {
         "data": {
           "endpoints": "Endpoints"
         },
         "data_description": {
-          "endpoints": "Solo se añadirán como dispositivos los endpoints seleccionados, con un sensor de réplicas por cada servicio de Docker Swarm."
+          "endpoints": "Solo se añadirán como dispositivos los endpoints seleccionados, con un sensor de réplicas por cada servicio de Docker Swarm y un sensor de estado por cada contenedor suelto."
         },
         "description": "Selecciona los endpoints de Portainer que quieres añadir.",
         "title": "Endpoints"
@@ -48,7 +48,7 @@
           "endpoints": "Endpoints"
         },
         "data_description": {
-          "endpoints": "Solo se añadirán como dispositivos los endpoints seleccionados, con un sensor de réplicas por cada servicio de Docker Swarm."
+          "endpoints": "Solo se añadirán como dispositivos los endpoints seleccionados, con un sensor de réplicas por cada servicio de Docker Swarm y un sensor de estado por cada contenedor suelto."
         },
         "description": "Selecciona los endpoints de Portainer que quieres exponer. Los dispositivos y entidades de los endpoints que deselecciones se eliminarán.",
         "title": "Endpoints"
@@ -102,6 +102,21 @@
         }
       },
       "name": "Escalar servicio de Docker Swarm"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "container": {
+        "state": {
+          "created": "Creado",
+          "running": "En marcha",
+          "paused": "En pausa",
+          "restarting": "Reiniciándose",
+          "removing": "Eliminándose",
+          "exited": "Parado",
+          "dead": "Muerto"
+        }
+      }
     }
   }
 }

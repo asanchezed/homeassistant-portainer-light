@@ -2,11 +2,14 @@
 
 Lightweight Home Assistant integration that exposes Docker Swarm services
 managed through [Portainer](https://www.portainer.io/) as replica-count
-sensors, plus a single service to scale them.
+sensors, the standalone containers next to them (`docker run` /
+`docker compose`) as state sensors, plus a single service to scale the
+Swarm services.
 
-It is intentionally minimal: no container/stack/volume/CPU/RAM entities,
-no buttons. Just one sensor per swarm service whose state is the number of
-desired replicas, and one HA service to change that number.
+It is intentionally minimal: no stack/volume/image/CPU/RAM entities, no
+buttons. One sensor per swarm service whose state is the number of desired
+replicas, one sensor per standalone container whose state is its Docker
+state, and one HA service to change the replicas.
 
 ## Features
 
@@ -17,6 +20,9 @@ desired replicas, and one HA service to change that number.
 - `mode` attribute (`replicated` / `global`) on each sensor.
 - `running` attribute: tasks whose container is actually running, to spot a
   service that is down or crash-looping (see below).
+- One sensor per standalone container (not created by Swarm): state =
+  Docker state (`running`, `exited`, `restarting`…), with its health and exit
+  code as attributes (see below).
 - HA service `portainer_light.scale_service` to scale `Replicated` services.
 - Polling every 60 seconds + immediate refresh after each scale action.
 
@@ -104,6 +110,42 @@ on when a service is not running as it should:
 The `delay_on` skips the few seconds a container needs to start after a
 scale action or an update.
 
+## Standalone containers
+
+Containers that are not Swarm tasks (no `com.docker.swarm.service.id` label),
+typically the ones started with `docker compose` because they need something
+Swarm does not support (`devices:`, `shm_size:`, …), get one sensor each.
+It is identified by the container name, so it survives re-creating the
+container. A container that disappears makes its sensor unavailable.
+
+State (enum): `created`, `running`, `paused`, `restarting`, `removing`,
+`exited` or `dead`.
+
+| Attribute         | Description                                                        |
+|-------------------|--------------------------------------------------------------------|
+| `container_name`  | Container name.                                                    |
+| `compose_project` | `com.docker.compose.project` label (`null` outside compose).       |
+| `compose_service` | `com.docker.compose.service` label.                                |
+| `image`           | Image the container runs.                                          |
+| `status`          | Docker's human status, e.g. `Up 9 days (healthy)`.                 |
+| `health`          | `healthy`, `unhealthy`, `starting`, or `null` without healthcheck. |
+| `exit_code`       | Exit code when `exited` or `restarting`, else `null`.              |
+
+A container is in trouble when it is `restarting` (crash loop), `dead`,
+`unhealthy`, or `exited` with a non-zero exit code:
+
+```yaml
+- binary_sensor:
+    name: My container down
+    device_class: problem
+    delay_on: "00:02:00"
+    state: >-
+      {% set e = 'sensor.myendpoint_mycontainer' %}
+      {{ states(e) in ['restarting', 'dead']
+         or state_attr(e, 'health') == 'unhealthy'
+         or (is_state(e, 'exited') and state_attr(e, 'exit_code') not in [0, none]) }}
+```
+
 ## Service: `portainer_light.scale_service`
 
 Scale a `Replicated` Docker Swarm service to a target number of replicas.
@@ -156,7 +198,7 @@ switch so it can be toggled from the dashboard:
 
 ## Out of scope
 
-- Container, stack, volume, image entities.
+- Stack, volume and image entities; one entity per Swarm task container.
 - CPU/RAM stats.
 - `prune_images`, container start/stop, kill, restart.
 - Anything that the official Home Assistant `portainer` integration already
