@@ -20,6 +20,8 @@ state, and one HA service to change the replicas.
 - `mode` attribute (`replicated` / `global`) on each sensor.
 - `running` attribute: tasks whose container is actually running, to spot a
   service that is down or crash-looping (see below).
+- `image` / `image_digest` attributes: the image (`repo:tag`) each service runs and
+  the digest Swarm pinned it to, e.g. to compare the tag with the latest release.
 - One sensor per standalone container (not created by Swarm): state =
   Docker state (`running`, `exited`, `restarting`…), with its health and exit
   code as attributes (see below).
@@ -91,6 +93,8 @@ own: open **Configure** and tick them.
 | `service_name`  | Swarm service name (`stackname_servicename`).                               |
 | `mode`          | `replicated` or `global`.                                                   |
 | `running`       | Tasks Swarm wants running whose container is in the `running` state. `null` when the tasks request timed out. |
+| `image`         | Image the service runs, as `repo:tag` (e.g. `jc21/nginx-proxy-manager:2.16.0`). |
+| `image_digest`  | Digest Swarm pinned the image to at deploy time (`sha256:…`), or `null`.    |
 
 The state is what Swarm *wants* (desired replicas); `running` is what it
 *has*. A service whose container keeps failing still reports `1` as its state,

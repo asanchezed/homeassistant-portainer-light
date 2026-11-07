@@ -176,6 +176,10 @@ class PortainerLightServiceSensor(
             # Tasks really running (None if the tasks call timed out). Compare
             # it with the state to spot a service that is down or crash-looping.
             attrs["running"] = data.running
+            # Image the service runs (``repo:tag``) and the digest Swarm pinned
+            # it to, e.g. to compare the tag with the latest upstream release.
+            attrs["image"] = data.image
+            attrs["image_digest"] = data.image_digest
         return attrs
 
 

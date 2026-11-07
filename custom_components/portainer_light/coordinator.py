@@ -87,6 +87,22 @@ class PortainerLightServiceData:
     version_index: int
     # Tasks actually in the ``running`` state; None when the tasks call failed.
     running: int | None = None
+    # Image the service runs (``repo:tag``), without the digest Swarm pins to it,
+    # and that digest (``sha256:...``) when there is one.
+    image: str = ""
+    image_digest: str | None = None
+
+
+def split_image_reference(reference: str | None) -> tuple[str, str | None]:
+    """Split ``repo:tag@sha256:...`` into ``("repo:tag", "sha256:...")``.
+
+    Swarm stores the image of a service pinned to the digest it resolved at deploy
+    time, so ``rclone/rclone:latest`` becomes ``rclone/rclone:latest@sha256:b06a...``.
+    """
+    if not reference:
+        return "", None
+    image, sep, digest = reference.partition("@")
+    return image, (digest if sep else None)
 
 
 @dataclass(slots=True)
@@ -333,6 +349,10 @@ class PortainerLightCoordinator(
             if not service_id or not name:
                 continue
 
+            image, image_digest = split_image_reference(
+                ((spec.get("TaskTemplate") or {}).get("ContainerSpec") or {}).get("Image")
+            )
+
             if "Replicated" in mode:
                 replicas = (mode["Replicated"] or {}).get("Replicas", 0)
                 replicated[service_id] = PortainerLightServiceData(
@@ -342,6 +362,8 @@ class PortainerLightCoordinator(
                     replicas=int(replicas) if replicas is not None else 0,
                     spec=spec,
                     version_index=int(version_index),
+                    image=image,
+                    image_digest=image_digest,
                 )
             elif "Global" in mode:
                 globals_pending[service_id] = PortainerLightServiceData(
@@ -351,6 +373,8 @@ class PortainerLightCoordinator(
                     replicas=0,
                     spec=spec,
                     version_index=int(version_index),
+                    image=image,
+                    image_digest=image_digest,
                 )
 
         services = {**replicated, **globals_pending}
